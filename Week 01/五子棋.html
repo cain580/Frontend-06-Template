@@ -44,12 +44,12 @@
     class Chessboard{
       constructor({boardSize=5,length=5,white,black}){
         //const {boardSize,length} = option || {boardSize:5,length:5};
-       // this._pattern = Array.from({ length: Math.pow(boardSize, 2) }).map(k=>0);
-        this._pattern=[
-          0,0,1,
-          0,0,2,
-          0,0,0
-        ]
+       this._pattern = Array.from({ length: Math.pow(boardSize, 2) }).map(k=>0);
+       //  this._pattern=[
+       //    0,0,1,
+       //    0,0,2,
+       //    0,0,0
+       //  ]
         console.log(this._pattern)
         //棋盘尺寸
         this._size = boardSize;
@@ -119,11 +119,12 @@
         //return Object.create(pattern);
         return JSON.parse(JSON.stringify(pattern));
       }
-      check(pattern,role){
+      check(pattern,role,target){
         pattern = pattern || this._pattern;
+
         let cr = role||this.currentRole;
         let l = this._size;
-        let target = this._length;
+        target = target|| this._length;
         //行
         for(let i=0;i<l;i++){
           let count = 0;
@@ -216,49 +217,50 @@
         }
 
       }
-      willWin(pattern,role){
+      willWin(pattern,role,target){
         let l = this._size;
         for(let i=0;i<l;i++){
           for(let j=0;j<l;j++){
             if(pattern[i*l+j]) continue;
             let tmp = this.clone(pattern);
             tmp[i*l+j] = role;
-            if(this.check(tmp,role)){
+            if(this.check(tmp,role,target)){
               return [j,i]
             }
           }
         }
         return null;
       }
-      bestChoice(pattern,role,c=0){
-        //if(c>=2)return false;
-        let point = this.willWin(pattern,role)
-        console.log("point:",pattern,point,role)
+      bestChoice(pattern,role,c=3,target){
+        target = target|| this._length;
+        let point = this.willWin(pattern,role,target)
         if(point){
           return {
             point,
             result:1
           }
         }
-        let result = -2;
+        let result = -1;
+        let rPoint = null;
         let l = this._size;
         outer: for(let i=0;i<l;i++){
           for(let j=0;j<l;j++){
             if(pattern[i*l+j]) continue;
-            //console.log(pattern,i*l+j,"i:"+i,"j:"+j,"深度："+c)
             let tmp = this.clone(pattern);
             tmp[i*l+j] = role;
-            let opp = this.bestChoice(tmp,3-role,++c);
-            console.log("opp",i,j,i*l+j,tmp,opp)
+            let opp = this.bestChoice(tmp,3-role,c-1,target-1);
             if(-opp.result >= result){
               point = [j,i];
+              rPoint = opp.point;
               result = -opp.result;
             }
+            //console.log("层级："+c,"选手：",role===1?"白子":"黑子","格子-",[j,i],"target:",target,"result:"+opp.result,"point:",opp.point)
             if(result===1) break outer;
           }
         }
         return {
           point,
+          rPoint,
           result:point?result:0
         }
       }
@@ -275,15 +277,17 @@
 
         let choice = board.bestChoice(pattern,cr)
         console.log(choice)
-        // if(choice.point){
-        //   board.add(choice.point[0],choice.point[1],cr)
-        // }
-        // if(board.check(pattern,cr)){
-        //   return setTimeout(()=>{
-        //     alert(cr===2?"黑子获胜！":"白子获胜！");
-        //   })
-        // }
-        // board.currentRole = 3-cr;
+        if(choice.result<=0&&choice.rPoint){
+          board.add(choice.rPoint[0],choice.rPoint[1],cr)
+        }else if(choice.result>0&&choice.point){
+          board.add(choice.point[0],choice.point[1],cr)
+        }
+        if(board.check(pattern,cr)){
+          return setTimeout(()=>{
+            alert(cr===2?"黑子获胜！":"白子获胜！");
+          })
+        }
+        board.currentRole = 3-cr;
 
       }
 
@@ -306,8 +310,8 @@
     const robot = new Robot();
     let currentRole = 1;
     const board = new Chessboard({
-      boardSize:3,
-      length:3,
+      boardSize:6,
+      length:5,
       white: player,
       black: robot,
     });
