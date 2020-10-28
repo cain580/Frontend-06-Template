@@ -87,7 +87,7 @@
             cell.classList.add("cell");
             pattern[i*l+j]===2?cell.appendChild(setPiece("black")):
               pattern[i*l+j]===1?cell.appendChild(setPiece("white")):
-                cell.addEventListener("click",()=>this.move(j,i));
+                cell.addEventListener("click",()=>this.userMove(j,i));
             //cell.innerText=i*l+j
             board.appendChild(cell);
           }
@@ -99,7 +99,7 @@
         this.draw();
       }
       //
-      move(x,y){
+      userMove(x,y){
         let cr = this.currentRole;
         this.add(x,y,cr);
         if(this.check()){
@@ -116,8 +116,8 @@
         }
       }
       clone(pattern){
-        //return Object.create(pattern);
-        return JSON.parse(JSON.stringify(pattern));
+        return Object.create(pattern);
+        //return JSON.parse(JSON.stringify(pattern));
       }
       check(pattern,role,target){
         pattern = pattern || this._pattern;
@@ -127,97 +127,112 @@
         target = target|| this._length;
         //行
         for(let i=0;i<l;i++){
-          let count = 0;
+            let data = [];
           for(let j=0;j<l;j++){
             if(pattern[i*l+j]===cr){
-              count++;
+                data.push(i*l+j);
             }else{
-              count = 0;
+                data = [];
             }
-            if(count >= target ){
-              return true;
-            }
+              if(data.length>= target){
+                  return data;
+              }
           }
         }
         //列
         for(let i=0;i<l;i++){
-          let count = 0;
+            let data = [];
           for(let j=0;j<l;j++){
             if(pattern[j*l+i]===cr){
-              count++;
+                data.push(j*l+i);
             }else{
-              count = 0;
+                data = [];
             }
-            if(count>= target ){
-              return true;
-            }
+              if(data.length>= target){
+                  return data;
+              }
           }
         }
         //左上 至 右下  偏上
         for(let i=0;i<l;i++){
           {
-            let count = 0;
+              let data = [];
             if(l-i<target) continue;
             for(let j=0;j<l-i;j++){
               if(pattern[j*l+j+i]===cr){
-                count++;
+                  data.push(j*l+j+i);
               }else{
-                count = 0;
+                 data = [];
               }
-              if(count>= target){
-                return true;
+              if(data.length>= target){
+                return data;
               }
             }
           }
         }
         //左上 至 右下  偏下
         for(let i=1;i<l;i++){
-          let count = 0;
+            let data = [];
           if(l-i<target) continue;
           for(let j=i;j<l;j++){
             if(pattern[j*l+j-i]===cr){
-              count++;
+                data.push(j*l+j-i);
             }else{
-              count = 0;
+                data=[];
             }
-            if(count>= target){
-              return true;
+            if(data.length>= target){
+              return data;
             }
           }
         }
         //右上 至 左下  偏下
         for(let i=1;i<l;i++){
-          let count = 0;
+            let data = [];
           if(l-i<target) continue;
           for(let j=i;j<l;j++){
             if(pattern[j*l+(l-1-j)+i]===cr){
-              count++;
+                data.push(j*l+(l-1-j)+i);
             }else{
-              count = 0;
+                data=[];
             }
-            if(count>= target){
-              return true;
+            if(data.length>= target){
+              return data;
             }
           }
         }
         //右上 至 左下  偏上
         for(let i=0;i<l;i++){
-          let count = 0;
+          let data = [];
           if(l-i<target) continue;
           for(let j=0;j<l-i;j++){
             if(pattern[j*l+(l-1-j)-i]===cr){
-              count++;
+                data.push(j*l+(l-1-j)-i);
             }else{
-              count = 0;
+                data=[];
             }
-            if(count>= target){
-              return true;
+            if(data.length>= target){
+              return data;
             }
           }
         }
 
       }
+      //去重已被堵住多行
+      unique(pattern,role,target){
+          pattern = pattern||this._pattern;
+          let repeat = this.check(pattern,role,target);
+          if(repeat){
+              let tmp = this.clone(pattern);
+              for(let i=0;i<repeat.length;i++){
+                  tmp[repeat[i]] = -1;
+              }
+              return this.unique(tmp,role,target);
+          }
+          return pattern;
+      }
       willWin(pattern,role,target){
+          pattern = this.unique(pattern,role,target);
+          console.log(pattern,role,target)
         let l = this._size;
         for(let i=0;i<l;i++){
           for(let j=0;j<l;j++){
@@ -231,40 +246,25 @@
         }
         return null;
       }
-      bestChoice(pattern,role,c=3,target){
+      bestChoice(pattern,role,target){
         target = target|| this._length;
-        let point = this.willWin(pattern,role,target)
+        // 当前最优
+        let point = this.willWin(pattern,role,target);
+        console.log(point)
+          // 如果没有当前最优，取对方最优
+        point = point?point:this.willWin(pattern,3-role,target);
+
         if(point){
           return {
             point,
             result:1
           }
         }
-        let result = -1;
-        let rPoint = null;
-        let l = this._size;
-        outer: for(let i=0;i<l;i++){
-          for(let j=0;j<l;j++){
-            if(pattern[i*l+j]) continue;
-            let tmp = this.clone(pattern);
-            tmp[i*l+j] = role;
-            let opp = this.bestChoice(tmp,3-role,c-1,target-1);
-            if(-opp.result >= result){
-              point = [j,i];
-              rPoint = opp.point;
-              result = -opp.result;
-            }
-            console.log("层级："+c,"选手：",role===1?"白子":"黑子","格子-",[j,i],"target:",target,"result:"+opp.result,"point:",opp.point,"rPoint:",opp.rPoint)
-            if(result===1) break outer;
-          }
-        }
-        return {
-          point:result<0?rPoint:point,
-          result:point?result:0
-        }
+          // 如果都没有最优，降级为4子期取最优
+          return this.bestChoice(pattern,role,target-1);
+
       }
-    }
-    class Robot {
+    }    class Robot {
       constructor(){
 
       }
@@ -272,18 +272,10 @@
 
         let cr = board.currentRole;
         let pattern = board._pattern;
-
-
         let choice = board.bestChoice(pattern,cr)
-        console.log(choice)
         if(choice.point){
             board.add(choice.point[0],choice.point[1],cr)
           }
-        // if(choice.result<=0&&choice.rPoint){
-        //   board.add(choice.rPoint[0],choice.rPoint[1],cr)
-        // }else if(choice.result>0&&choice.point){
-        //   board.add(choice.point[0],choice.point[1],cr)
-        // }
         if(board.check(pattern,cr)){
           return setTimeout(()=>{
             alert(cr===2?"黑子获胜！":"白子获胜！");
@@ -312,7 +304,7 @@
     const robot = new Robot();
     let currentRole = 1;
     const board = new Chessboard({
-      boardSize:10,
+      boardSize:20,
       length:5,
       white: player,
       black: robot,
