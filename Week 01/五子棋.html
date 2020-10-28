@@ -254,13 +254,12 @@
               rPoint = opp.point;
               result = -opp.result;
             }
-            //console.log("层级："+c,"选手：",role===1?"白子":"黑子","格子-",[j,i],"target:",target,"result:"+opp.result,"point:",opp.point)
+            console.log("层级："+c,"选手：",role===1?"白子":"黑子","格子-",[j,i],"target:",target,"result:"+opp.result,"point:",opp.point,"rPoint:",opp.rPoint)
             if(result===1) break outer;
           }
         }
         return {
-          point,
-          rPoint,
+          point:result<0?rPoint:point,
           result:point?result:0
         }
       }
@@ -277,11 +276,14 @@
 
         let choice = board.bestChoice(pattern,cr)
         console.log(choice)
-        if(choice.result<=0&&choice.rPoint){
-          board.add(choice.rPoint[0],choice.rPoint[1],cr)
-        }else if(choice.result>0&&choice.point){
-          board.add(choice.point[0],choice.point[1],cr)
-        }
+        if(choice.point){
+            board.add(choice.point[0],choice.point[1],cr)
+          }
+        // if(choice.result<=0&&choice.rPoint){
+        //   board.add(choice.rPoint[0],choice.rPoint[1],cr)
+        // }else if(choice.result>0&&choice.point){
+        //   board.add(choice.point[0],choice.point[1],cr)
+        // }
         if(board.check(pattern,cr)){
           return setTimeout(()=>{
             alert(cr===2?"黑子获胜！":"白子获胜！");
@@ -310,7 +312,7 @@
     const robot = new Robot();
     let currentRole = 1;
     const board = new Chessboard({
-      boardSize:6,
+      boardSize:10,
       length:5,
       white: player,
       black: robot,
