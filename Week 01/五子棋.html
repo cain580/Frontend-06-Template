@@ -345,16 +345,12 @@
         }
           // 如果都没有最优，降级为4子期取最优
           return this.bestChoice(pattern,role,target-1);
-
       }
     }
 
     class Robot {
-      constructor(){
-
-      }
+      constructor(){}
       playChess(board){
-
         let cr = board.currentRole;
         let pattern = board._pattern;
         let choice = board.bestChoice(pattern,cr)
@@ -367,30 +363,30 @@
           })
         }
         board.currentRole = 3-cr;
-
       }
 
     }
     class Player {
-      constructor(){
-
-      }
+      constructor(){}
       playChess(){
         setTimeout(()=>{
           console.log("请选手下子")
         })
-
       }
     }
-    const player = new Player();
-    const robot = new Robot();
-    const board = new Chessboard({
-      boardSize:20,
-      length:5,
-      white: player,
-      black: robot,
-    });
 
+    (function(){
+      var size =  prompt("请选择棋盘格数（默认15）：",15);
+      var length  =  prompt("请选择胜利条件（默认5）：",5);
+      const player = new Player();
+      const robot = new Robot();
+      const board = new Chessboard({
+        boardSize:size,
+        length:length,
+        white: player,
+        black: robot,
+      });
+    })()
 
 
 

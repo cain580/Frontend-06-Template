@@ -1,0 +1,107 @@
+<!DOCTYPE html >
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>红绿灯</title>
+  <style>
+    #app{
+      width: 100px;
+      display: flex;
+      flex-direction:column;
+      align-items: center;
+      background: #000;
+    }
+    .cell{
+      width: 100px;
+      height: 100px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+      border: 1px solid #fff;
+    }
+    .red{
+      width: 60px;
+      height: 60px;
+      background: red;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .yellow{
+      width: 60px;
+      height: 60px;
+      background: yellow;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .green{
+      width: 60px;
+      height: 60px;
+      background: green;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .dark{
+      opacity: 0.3;
+    }
+
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    class Light{
+      constructor(time){
+        this._pattern = [0,1,2]; // [红，黄，绿]
+        this._time = time||[5,2,10];
+        this.current = 0;
+        this._countDown = this._time[this.current];
+        //绘制
+        this.setTimeout();
+      }
+      setTimeout(){
+        this.draw();
+        setTimeout(()=>{
+          this._countDown--;
+          if(this._countDown<=0){
+            this.current++;
+            this.current = this.current>this._pattern.length-1?0:this.current;
+            this._countDown = this._time[this.current];
+          }
+          this.setTimeout();
+        },1000)
+      }
+      //绘制
+      draw(pattern){
+        pattern = pattern || this._pattern;
+        let board = document.getElementById("app");
+        let c = this.current;
+        board.innerHTML = "";
+        let setPiece = (id)=>{
+          let p = document.createElement("span");
+          let _class = id === 0 ? "red" : id === 1 ? "yellow" : id === 2 ? "green" : "";
+          if(_class){
+            p.classList.add(_class, id!== c?"dark":null);
+          }
+          p.innerHTML = c === id ? this._countDown : "";
+          return p;
+        };
+        for(let i=0;i<pattern.length;i++){
+            let cell = document.createElement("div");
+            cell.classList.add("cell");
+            cell.appendChild(setPiece(pattern[i]));
+            board.appendChild(cell);
+        }
+      }
+    }
+    const light = new Light([5,2,10]);
+  </script>
+</body>
+</html>
