@@ -381,8 +381,8 @@
       const player = new Player();
       const robot = new Robot();
       const board = new Chessboard({
-        boardSize:size,
-        length:length,
+        boardSize:size||15,
+        length:length||5,
         white: player,
         black: robot,
       });
