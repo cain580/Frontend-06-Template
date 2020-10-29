@@ -108,12 +108,14 @@
           })
         }
         this.currentRole = cr = 3 - cr;
+        setTimeout(()=>{
+          if(cr === 2){
+            this.black.playChess(this);
+          }else if(cr === 1){
+            this.white.playChess(this);
+          }
+        })
 
-        if(cr === 2){
-          this.black.playChess(this);
-        }else if(cr === 1){
-          this.white.playChess(this);
-        }
       }
       clone(pattern){
         return Object.create(pattern);
@@ -376,8 +378,8 @@
     }
 
     (function(){
-      var size =  prompt("请选择棋盘格数（默认15）：",15);
-      var length  =  prompt("请选择胜利条件（默认5）：",5);
+      var size =  prompt("请选择棋盘格数（默认15,大于30,AI由于性能问题，下棋速度会变慢）：",15);
+      var length  =  prompt("请选择胜利条件（默认5，想玩4/6/7/8子棋，请随意）：",5);
       const player = new Player();
       const robot = new Robot();
       const board = new Chessboard({
