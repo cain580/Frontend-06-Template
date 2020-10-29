@@ -124,7 +124,9 @@
 
         let cr = role||this.currentRole;
         let l = this._size;
-        target = target|| this._length;
+        let realTarget = this._length;
+        target = target|| realTarget;
+
         //行
         for(let i=0;i<l;i++){
             let data = [];
@@ -134,9 +136,22 @@
             }else{
                 data = [];
             }
-              if(data.length>= target){
-                  return data;
+            if(data.length>= target){
+              //小于5连时有一边被拦截，不算最优
+              if( target!==this._length
+                && ((
+                  data[0]===i*l
+                    || pattern[data[0]-1]
+                  )||(
+                    data[data.length-1]===i*l+l-1
+                    || pattern[data[data.length-1]+1]
+                  ))
+              ){
+                data = [];
+              }else{
+                return data;
               }
+            }
           }
         }
         //列
@@ -149,12 +164,25 @@
                 data = [];
             }
               if(data.length>= target){
+                //小于5连时有一边被拦截，不算最优
+                if( target!==this._length
+                  && ((
+                      data[0]===i
+                      || pattern[data[0]-l]
+                    )||(
+                      data[data.length-1]===(l-1)*l+i
+                      || pattern[data[data.length-1]+l]
+                  ))
+                ){
+                  data = [];
+                }else{
                   return data;
+                }
               }
           }
         }
         //左上 至 右下  偏上
-        for(let i=0;i<l;i++){
+        for(let i=0;i<=l-realTarget;i++){
           {
               let data = [];
             if(l-i<target) continue;
@@ -165,13 +193,27 @@
                  data = [];
               }
               if(data.length>= target){
-                return data;
+                //小于5连时有一边被拦截，不算最优
+                if( target!==this._length
+                  && ((
+                    data[0]===i
+                      || pattern[data[0]-(l+1)]
+                    )||(
+                      data[data.length-1]===(l-i-1)*l+(l-i-1)+i
+                      || pattern[data[data.length-1]+(l+1)]
+                    ))
+                ){
+                  data = [];
+                }else{
+                  return data;
+                }
               }
             }
           }
         }
+
         //左上 至 右下  偏下
-        for(let i=1;i<l;i++){
+        for(let i=1;i<=l-realTarget;i++){
             let data = [];
           if(l-i<target) continue;
           for(let j=i;j<l;j++){
@@ -181,27 +223,56 @@
                 data=[];
             }
             if(data.length>= target){
-              return data;
+              //小于5连时有一边被拦截，不算最优
+              if( target!==this._length
+                && ((
+                    data[0]===i*l
+                    || pattern[data[0]-(l+1)]
+                  )||(
+                    data[data.length-1]===(l-1)*l+(l-1)-i
+                    || pattern[data[data.length-1]+(l+1)]
+                ))
+              ){
+                data = [];
+              }else{
+                return data;
+              }
             }
           }
         }
+
         //右上 至 左下  偏下
-        for(let i=1;i<l;i++){
+        for(let i=1;i<=l-realTarget;i++){
             let data = [];
           if(l-i<target) continue;
           for(let j=i;j<l;j++){
+
             if(pattern[j*l+(l-1-j)+i]===cr){
                 data.push(j*l+(l-1-j)+i);
             }else{
                 data=[];
             }
             if(data.length>= target){
-              return data;
+              //小于5连时有一边被拦截，不算最优
+              if( target!==this._length
+                && ((
+                    data[0]===i*l+(l-1-i)+i
+                    || pattern[data[0]-(l-1)]
+                  )||(
+                    data[data.length-1]===(l-1)*l+i
+                    || pattern[data[data.length-1]+(l-1)]
+                ))
+              ){
+                data = [];
+              }else{
+                return data;
+              }
+
             }
           }
         }
         //右上 至 左下  偏上
-        for(let i=0;i<l;i++){
+        for(let i=0;i<=l-realTarget;i++){
           let data = [];
           if(l-i<target) continue;
           for(let j=0;j<l-i;j++){
@@ -211,28 +282,41 @@
                 data=[];
             }
             if(data.length>= target){
-              return data;
+              //小于5连时有一边被拦截，不算最优
+              if( target!==this._length
+                && ((
+                  data[0]===(l-1)-i
+                  || pattern[data[0]-(l-1)]
+                )||(
+                  data[data.length-1]===(l-i-1)*l+(l-1-(l-i-1))-i
+                  || pattern[data[data.length-1]+(l-1)]
+                ))
+              ){
+                data = [];
+              }else{
+                return data;
+              }
             }
           }
         }
-
+        return false;
       }
       //去重已被堵住多行
-      unique(pattern,role,target){
-          pattern = pattern||this._pattern;
-          let repeat = this.check(pattern,role,target);
-          if(repeat){
-              let tmp = this.clone(pattern);
-              for(let i=0;i<repeat.length;i++){
-                  tmp[repeat[i]] = -1;
-              }
-              return this.unique(tmp,role,target);
-          }
-          return pattern;
-      }
+      // unique(pattern,role,target){
+      //     pattern = pattern||this._pattern;
+      //     let repeat = this.check(pattern,role,target);
+      //     if(repeat){
+      //         let tmp = this.clone(pattern);
+      //         for(let i=0;i<repeat.length;i++){
+      //             tmp[repeat[i]] = -1;
+      //         }
+      //         return this.unique(tmp,role,target);
+      //     }
+      //     return pattern;
+      // }
       willWin(pattern,role,target){
-          pattern = this.unique(pattern,role,target);
-          console.log(pattern,role,target)
+        //  pattern = this.unique(pattern,role,target);
+         // console.log(pattern,role,target)
         let l = this._size;
         for(let i=0;i<l;i++){
           for(let j=0;j<l;j++){
@@ -250,7 +334,6 @@
         target = target|| this._length;
         // 当前最优
         let point = this.willWin(pattern,role,target);
-        console.log(point)
           // 如果没有当前最优，取对方最优
         point = point?point:this.willWin(pattern,3-role,target);
 
@@ -264,7 +347,9 @@
           return this.bestChoice(pattern,role,target-1);
 
       }
-    }    class Robot {
+    }
+
+    class Robot {
       constructor(){
 
       }
@@ -297,12 +382,8 @@
 
       }
     }
-    class Piece{
-
-    }
     const player = new Player();
     const robot = new Robot();
-    let currentRole = 1;
     const board = new Chessboard({
       boardSize:20,
       length:5,
