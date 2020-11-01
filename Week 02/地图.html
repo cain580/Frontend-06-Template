@@ -1,0 +1,165 @@
+<!DOCTYPE html >
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>地图</title>
+    <style>
+        #app {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            border: 1px solid #fff;
+            background: #fff;
+        }
+        .cell {
+            width: 8px;
+            height: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            border: 0.5px solid #999;
+        }
+    </style>
+</head>
+<body>
+<div id="app"></div>
+<button onclick="map.save()">save</button>
+<script>
+    function sleep(t) {
+        return new Promise((resolve)=>{
+            setTimeout(resolve,t||0)
+        })
+    }
+    class Path{
+        constructor(map){
+            this._queue = null;
+            this._table = null;
+            this._map = map;
+        }
+        async run(start,end){
+            let queue = this._queue = [start];
+            let table = this._table = Object.create(this._map.queue);
+            while(queue.length){
+                let [x,y] = queue.shift();
+                //console.log(x,y);
+                if(x === end[0] && y === end[1]){
+                    return this.optimum(this._table,start,end);
+                }
+                await this.insert(x-1,y,[x,y]);
+                await this.insert(x,y-1,[x,y]);
+                await this.insert(x+1,y,[x,y]);
+                await this.insert(x,y+1,[x,y]);
+
+                await this.insert(x-1,y-1,[x,y]);
+                await this.insert(x+1,y-1,[x,y]);
+                await this.insert(x-1,y+1,[x,y]);
+                await this.insert(x+1,y+1,[x,y]);
+            }
+        }
+        optimum(table,start,end){
+            let path = [],
+                [x,y] = end,
+                map = this._map,
+                l = map.size;
+            while(x !== start[0] || y !== start[1]){
+                path.push(y*l+x);
+                [x,y] = table[y*l+x]
+                map.setColor(y*l+x, "purple");
+            }
+            return path;
+        }
+        async insert(x,y,pre){
+            let map = this._map,
+                l = map.size;
+            if(x < 0 || x>=l || y<0 || y>=l)return;
+            if(this._table[y*l+x])return;
+           // await sleep(10);
+            map.setColor(y*l+x, "green");
+            //map.set(y*l+x, 2);
+            this._table[y*l+x] = pre;
+            this._queue.push([x,y]);
+        }
+
+    }
+    class Map {
+        constructor({size = 100}) {
+            this._map = localStorage.getItem("MAP")? JSON.parse(localStorage.getItem("MAP")): Array(100 ** 2).fill(0);
+            this._app = document.getElementById("app");
+            //尺寸
+            this._size = size;
+            //是否按下鼠标
+            this._mousedown = false;
+            //是否删除
+            this._clear= false;
+            //绘制地图
+            this.draw();
+            this.listener();
+
+        }
+        get queue(){
+            return this._map;
+        }
+        get size(){
+            return this._size;
+        }
+        set(print,val){
+            this._map[print]=val;
+        }
+        setColor(print,color){
+            this._app.children[print].style.backgroundColor = color;
+        }
+        save(){
+            localStorage.setItem("MAP",JSON.stringify(this._map));
+        }
+        listener(){
+            document.addEventListener("mousedown",e=>{
+                this._mousedown = true;
+                this._clear = (e.which === 3);
+            });
+            document.addEventListener("mouseup",()=> this._mousedown = false);
+            document.addEventListener("contextmenu",e=> e.preventDefault())
+        }
+        //绘制棋盘
+        draw(pattern) {
+            let l = this._size,
+                map = this._map,
+                app =  this._app;
+            app.style.width =  l*8+"px";
+            for (let y = 0; y < l; y++) {
+                for (let x = 0; x < l; x++) {
+                    let cell = document.createElement("div");
+                    cell.classList.add("cell");
+                    // 为1是为障碍物
+                    if (map[l * y + x] === 1) cell.style.backgroundColor = "black";
+                    // 添加障碍物/删除障碍物
+                    cell.addEventListener("mousemove", () => {
+                        if (this._mousedown) {
+                            if (this._clear) {
+                                cell.style.backgroundColor = "";
+                                map[l * y + x] = 0;
+                            } else {
+                                cell.style.backgroundColor = "black";
+                                map[l * y + x] = 1;
+                            }
+                        }
+                    })
+                    app.appendChild(cell);
+                }
+            }
+        }
+
+
+    }
+
+
+    let map = new Map({size:100});
+    let path = new Path(map);
+    path.run([0,0],[50,50]).then((p)=>{
+        console.log(p)
+    })
+</script>
+</body>
+</html>
