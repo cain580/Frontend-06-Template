@@ -27,11 +27,102 @@
 <body>
 <div id="app"></div>
 <button onclick="map.save()">save</button>
+<button onclick="map.clear()">clear</button>
+<br/>
+<br/>
+<label for="start">开始点：</label>
+<input id ="start" type="text" style="width: 60px" value="0,0">
+&nbsp;&nbsp;
+<label for="end">结束点：</label>
+<input id ="end" type="text" style="width: 60px" value="50,50">&nbsp;&nbsp;
+<button onclick="onStart()">开始寻路</button> <span id="length1"></span>&nbsp;&nbsp;
+
+<button onclick="onOptimize()">路线优化</button><span id="length2"></span>
 <script>
     function sleep(t) {
         return new Promise((resolve)=>{
             setTimeout(resolve,t||0)
         })
+    }
+    class Sorted{
+        constructor(data,compare){
+            this.data = data.slice();
+            this.compare = compare || ((a,b) => a-b);
+        }
+        get length(){
+            return this.data.length;
+        }
+        take(){
+            if(!this.data.length) return;
+            let data = this.data,
+                min = this.data[0],
+                minIndex = 0;
+            for(let i=1;i<data.length;i++){
+                if(this.compare(data[i],min) < 0){
+                    min = data[i];
+                    minIndex = i;
+                }
+            }
+            data[minIndex] = data[data.length - 1];
+            data.pop();
+            return min;
+        }
+        give(v){
+            this.data.push(v);
+        }
+    }
+    // 二叉堆
+    class BinaryHeap{
+        constructor(data,compare){
+            this.data = data.slice();
+            this.compare = compare || ((a,b) => a-b);
+        }
+        get length(){
+            return this.data.length;
+        }
+        take(){
+            if(!this.data.length) return;
+            let data = this.data,
+                min = data[0],
+                i = 0;
+            data[0] = data[data.length-1];
+            data.pop();
+            while (i < data.length){
+                let left = i * 2 + 1;
+                let right = i * 2 + 2;
+                let minIndex = null;
+                let parent = data[i];
+                if(left >= data.length) break;
+                if(right >= data.length){
+                    // 没有右节点，左节点就是最小节点
+                    minIndex = left;
+                }else{
+                    // 计算出左右孩子的最小点
+                    minIndex = this.compare(data[left],data[right])<0?left:right;
+                }
+                //如果最小的节点<父节点，则父节点下沉
+                if(this.compare(data[minIndex],parent)<0){
+                    data[i] = data[minIndex];
+                    data[minIndex] = parent;
+                    i = minIndex;
+                }else break;
+            }
+            return min;
+        }
+        give(v){
+            let data = this.data,
+                i = data.length;
+            data[i] = v;
+            while (i > 0){
+                let current = data[i],
+                    parentIndex = Math.floor((i-1)/2);
+                if(this.compare(current,data[parentIndex])<0){
+                    data[i] = data[parentIndex];
+                    data[parentIndex] = current;
+                    i = parentIndex;
+                }else break;
+            }
+        }
     }
     class Path{
         constructor(map){
@@ -39,54 +130,79 @@
             this._table = null;
             this._map = map;
         }
+
+        
         async run(start,end){
-            let queue = this._queue = [start];
+            let queue = this._queue = new BinaryHeap([start],(a,b) => this.distance(a,end) -  this.distance(b,end));//[start];
             let table = this._table = Object.create(this._map.queue);
             while(queue.length){
-                let [x,y] = queue.shift();
-                //console.log(x,y);
+                let [x,y] = queue.take();
                 if(x === end[0] && y === end[1]){
-                    return this.optimum(this._table,start,end);
+                    return this.optimum(table,start,end);
                 }
-                await this.insert(x-1,y,[x,y]);
-                await this.insert(x,y-1,[x,y]);
-                await this.insert(x+1,y,[x,y]);
-                await this.insert(x,y+1,[x,y]);
+                let prent = [x,y];
+                await this.insert(x-1,y,prent);
+                await this.insert(x,y-1,prent);
+                await this.insert(x+1,y,prent);
+                await this.insert(x,y+1,prent);
 
-                await this.insert(x-1,y-1,[x,y]);
-                await this.insert(x+1,y-1,[x,y]);
-                await this.insert(x-1,y+1,[x,y]);
-                await this.insert(x+1,y+1,[x,y]);
+                await this.insert(x-1,y-1,prent);
+                await this.insert(x+1,y-1,prent);
+                await this.insert(x-1,y+1,prent);
+                await this.insert(x+1,y+1,prent);
             }
         }
-        optimum(table,start,end){
-            let path = [],
+        async optimum(table,start,end){
+            let path = [end],
                 [x,y] = end,
                 map = this._map,
                 l = map.size;
             while(x !== start[0] || y !== start[1]){
-                path.push(y*l+x);
+               // await sleep(1);
                 [x,y] = table[y*l+x]
+                path.push([x,y]);
                 map.setColor(y*l+x, "purple");
             }
-            return path;
+
+            return path.reverse();
         }
         async insert(x,y,pre){
             let map = this._map,
                 l = map.size;
-            if(x < 0 || x>=l || y<0 || y>=l)return;
-            if(this._table[y*l+x])return;
-           // await sleep(10);
-            map.setColor(y*l+x, "green");
+            if(x < 0 || x >= l || y < 0 || y >= l)
+                return;
+            if(this._table[y * l + x])
+                return;
+           // await sleep();
+            map.setColor(y * l + x, "green");
             //map.set(y*l+x, 2);
-            this._table[y*l+x] = pre;
-            this._queue.push([x,y]);
+            this._table[y * l + x] = pre;
+            this._queue.give([x, y]);
+        }
+        distance(point,end){
+            return (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2
+        }
+        clear(){
+            // localStorage.setItem("MAP","");
+            this._map
+            this._map.draw();
+
+        }
+        async draw(line){
+            let i = 0,
+            l = this._map.size;
+            while(i < line.length){
+                let [x,y] = line[i];
+                i++;
+                this._map.setColor(y*l+x, "blue");
+                await sleep(1);
+            }
         }
 
     }
     class Map {
         constructor({size = 100}) {
-            this._map = localStorage.getItem("MAP")? JSON.parse(localStorage.getItem("MAP")): Array(100 ** 2).fill(0);
+            this._map = localStorage.getItem("MAP")? JSON.parse(localStorage.getItem("MAP")): Array(size ** 2).fill(0);
             this._app = document.getElementById("app");
             //尺寸
             this._size = size;
@@ -114,6 +230,12 @@
         save(){
             localStorage.setItem("MAP",JSON.stringify(this._map));
         }
+        clear(){
+            this._map = localStorage.getItem("MAP")? JSON.parse(localStorage.getItem("MAP")): Array(size ** 2).fill(0);
+            this._app.innerHTML="";
+            this.draw();
+        }
+
         listener(){
             document.addEventListener("mousedown",e=>{
                 this._mousedown = true;
@@ -122,8 +244,8 @@
             document.addEventListener("mouseup",()=> this._mousedown = false);
             document.addEventListener("contextmenu",e=> e.preventDefault())
         }
-        //绘制棋盘
-        draw(pattern) {
+        //绘制地图
+        draw() {
             let l = this._size,
                 map = this._map,
                 app =  this._app;
@@ -154,12 +276,52 @@
 
     }
 
+    class OptimizePath{
+        constructor(path){
+            this._path = path;
 
-    let map = new Map({size:100});
-    let path = new Path(map);
-    path.run([0,0],[50,50]).then((p)=>{
-        console.log(p)
-    })
+        }
+        async search(start,end){
+            const path = this._path;
+            let line = await path.run(start,end);
+            let i = 2;
+            while (i<line.length) {
+                let optimizeLine = await path.run(start,line[i]);
+                if(optimizeLine.length<=i){
+                    console.log(optimizeLine)
+                    line = optimizeLine.concat(line.slice(i+1,line.length));
+                    console.log(line)
+                    i = optimizeLine.length;
+                }else{
+                    i++;
+                }
+            }
+            return line
+        }
+    }
+    const map = new Map({size:100});
+    const path = new Path(map);
+    const optimize = new OptimizePath(path);
+    let start,end;
+    function onStart(){
+        let _start = document.getElementById("start").value;
+        let _end = document.getElementById("end").value;
+
+        start = _start?_start.split(",").map((v)=>v*1):[0,0];
+        end = _end?_end.split(",").map((v)=>v*1):[50,50];
+        path.run(start,end).then((line)=>{
+            document.getElementById("length1").innerText = "最佳路线："+line.length + "点";
+        });
+    }
+    function onOptimize() {
+        optimize.search(start,end).then((line)=>{
+            document.getElementById("length2").innerText = "优化后路线："+line.length + "点";
+            path.draw(line);
+        })
+    }
+
+
+
 </script>
 </body>
 </html>
