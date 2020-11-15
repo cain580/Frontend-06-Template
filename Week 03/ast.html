@@ -1,0 +1,185 @@
+<!DOCTYPE html >
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>ast</title>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+
+
+    class Expression{
+        constructor(){
+            this.regexp = /([0-9\.]+)|([ \t]+)|([\r\n]+)|(\*)|(\/)|(\+)|(\-)|(\()|(\))/g;
+            this.dictionary = ["Nunber", "Whitespace", "LineTerminator", "*", "/", "+", "-","(",")"];
+        }
+        compute(str){
+            let source = [];
+            for(let token of this.tokenize(str) ){
+                if(token.type !== "Whitespace" && token.type !== "LineTerminator"){
+                    source.push(token);
+                }
+            }
+            console.log(source);
+            return this.Expression(source);
+        }
+        * tokenize(source) {
+            const regexp = this.regexp,
+                dictionary = this.dictionary;
+            let result = null;
+            let lastIndex = 0;
+            while(true){
+                lastIndex = regexp.lastIndex;
+                result = regexp.exec(source);
+                if(!result) break;
+                if( regexp.lastIndex - lastIndex > result[0].length) break;
+
+                let token = {
+                    type: null,
+                    value: null
+                }
+                for(let i = 1;i <= dictionary.length; i++){
+                    if(result[i])
+                        token.type = dictionary[i-1];
+                }
+                token.value = result[0];
+                yield token;
+            }
+            yield {
+                type: "EOF"
+            }
+        }
+        Expression(source) {
+            if(source[0].type === "AdditiveExpression" && source[1] && source[1].type === "EOF"){
+                let node = {
+                    type:"Expression",
+                    children:[source.shift(),source.shift()]
+                }
+                source.unshift(node);
+                return node;
+            }
+
+            this.AdditiveExpression(source);
+            return this.Expression(source)
+        }
+        // 组合表达式  （）优先  输出 AdditiveExpression
+        GroupingExpression(source) {
+            if(source[0].type === "(") {
+                let node = {
+                    type:"GroupingExpression",
+                    children:[]
+                }
+                source.shift();
+                while (true){
+                    if(source[0] && source[0].type === "("){
+                        this.GroupingExpression(source);
+                        node.children.push(source.shift());
+                    }else if( source[0] && source[0].type === ")"){
+                        this.AdditiveExpression(node.children);
+                        break;
+                    }else if(source[0]){
+                        node.children.push(source.shift());
+                    }else{
+                        console.log( "指令‘）’缺失" );
+                        break;
+                    }
+                }
+                source[0] = node;
+                return this.GroupingExpression(source);
+                //return source[0];
+            }
+            if(source[0].type === "GroupingExpression" ){
+                // 原先输出 GroupingExpression
+                // 为了减少嵌套 改为输出 组合分析完毕后的 AdditiveExpression
+                source[0] = source[0].children[0];
+                return source[0];
+            }
+            return this.GroupingExpression(source)
+        }
+        // 加减法表达式
+        AdditiveExpression(source) {
+
+            if(source[0].type === "MultiplicationExpression"){
+                let node = {
+                    type:"AdditiveExpression",
+                    children:[source[0]]
+                };
+                source[0] = node;
+                return this.AdditiveExpression(source);
+            }
+            if(source[0].type === "AdditiveExpression" && source[1] && (source[1].type === "+" || source[1].type === "-")){
+                let node = {
+                    type:"AdditiveExpression",
+                    operator: source[1].type,
+                    children: []
+                }
+                node.children.push(source.shift());
+                node.children.push(source.shift());
+                this.MultiplicationExpression(source);
+                node.children.push(source.shift());
+                source.unshift(node);
+                return this.AdditiveExpression(source);
+            }
+            if(source[0].type === "AdditiveExpression" ){
+                return source[0];
+            }
+            this.MultiplicationExpression(source);
+            return this.AdditiveExpression(source)
+        }
+        // 乘除法表达式
+        MultiplicationExpression(source) {
+            if(source[0].type === "Nunber"){
+                let node = {
+                    type:"MultiplicationExpression",
+                    children:[source[0]]
+                };
+                source[0] = node;
+                return this.MultiplicationExpression(source);
+            }
+            // 为了减少嵌套 改为输出 AdditiveExpression类型
+            // if(source[0].type === "GroupingExpression"){
+            //     let node = {
+            //         type:"MultiplicationExpression",
+            //         children:[source[0]]
+            //     };
+            //     source[0] = node;
+            //     return MultiplicationExpression(source);
+            // }
+            if(source[0].type === "MultiplicationExpression" && source[1] && (source[1].type === "*" || source[1].type === "/")){
+                let node = {
+                    type:"MultiplicationExpression",
+                    operator: source[1].type,
+                    children: []
+                }
+                node.children.push(source.shift());
+                node.children.push(source.shift());
+                if(source[0].type === "(")
+                    this.GroupingExpression(source);
+                node.children.push(source.shift());
+                source.unshift(node);
+                return this.MultiplicationExpression(source);
+            }
+
+            if(source[0].type === "MultiplicationExpression" ){
+                return source[0];
+            }
+            // GroupingExpression 方法返回 AdditiveExpression类型
+            if(source[0].type === "AdditiveExpression" ){
+                return source[0];
+            }
+            this.GroupingExpression(source);
+            return this.MultiplicationExpression(source);
+        }
+    }
+
+    const expression = new Expression();
+
+
+    console.log( expression.compute("13 + 32 * 2131 + (123 + (123 + 123)976 * 3424)") )
+
+</script>
+</body>
+</html>
