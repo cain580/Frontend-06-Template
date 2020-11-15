@@ -1,23 +1,41 @@
 学习笔记
+
 乘除运算表达式 = ( Number | MultiplicationExpression ) *|/ ( Number | MultiplicationExpression )
+
 加减运算表达式 = ( AdditiveExpression | MultiplicationExpression ) +|- ( AdditiveExpression | MultiplicationExpression )
+
 表达式 = AdditiveExpression EOF
 
+
 理解：
+
 乘除 运算优先级大于 加减
+
 乘除 运算优先级一致 左先于右
+
 加减 运算优先级一致 左先于右
+
 故：词法分析从左到右，先乘除后加减
 
+
 老师的做法：
+
 1、所有数字包在乘除表达式中
+
 2、加减只处理 乘除表达式与加减表达式
+
 3、至EOF结束运算
 
+
+
 思考：
-1、如诺添加 （） ，（）的优先级最高，改如何处理？	
-	添加组合运算表达式 （用于处理 <（）>内的逻辑） 输出 AdditiveExpression	
+
+1、如诺添加 （） ，（）的优先级最高，改如何处理？
+
+	添加组合运算表达式 （用于处理 <（）>内的逻辑） 输出 AdditiveExpression
+
 	乘除运算表达式<MultiplicationExpression> = ( Number | MultiplicationExpression | AdditiveExpression<组合运算表达式输出> ) *|/ ( Number | MultiplicationExpression | AdditiveExpression<组合运算表达式输出>)
+
 	加减运算表达式<AdditiveExpression> = ( AdditiveExpression | MultiplicationExpression ) +|- ( AdditiveExpression | MultiplicationExpression )
 	
 	组合运算表达式<GroupingExpression>逻辑 ：
