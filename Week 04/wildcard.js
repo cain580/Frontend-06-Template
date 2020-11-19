@@ -33,8 +33,6 @@ function kmp(source,pattern) {
 
 }
 
-//kmp("","abcdabce");
-//console.log(kmp("abababc1","abababc"));
 // 计算 * 数量
 function getCount(pattern){
     let count = 0
@@ -42,6 +40,7 @@ function getCount(pattern){
         if(pattern[i] === "*") count++;
     return count;
 }
+
 function wildcard(source,pattern) {
     // 计算 * 数量
     let starCount = getCount(pattern);
@@ -67,16 +66,18 @@ function wildcard(source,pattern) {
         if( pattern[pattern.length - lastIndex] !== source[ source.length - lastIndex]
             && pattern[pattern.length - lastIndex] !== "?") return false;
     }
-    // 如果*只有一个 * 前后已经比对无错则返回 true;
+    // 如果*只有一个， * 前后已经比对无错则返回 true;
     if(starCount === 1) return true;
+
+    // 重新赋值 截取两* 中间部分字符串
     source = source.slice(startIndex+1,-lastIndex);
     pattern = pattern.slice(startIndex+1,-lastIndex);
      console.log(source, pattern);
 
     if(getCount(pattern) === 0)
-        return kmp(source,pattern);
+        return kmp(source,pattern); // 两个* 的情况
     else
-        return wildcard(source,pattern);
+        return wildcard(source,pattern); // 多个* 的情况
 }
 
 
