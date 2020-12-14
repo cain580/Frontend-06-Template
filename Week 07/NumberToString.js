@@ -13,6 +13,7 @@ function NumberToString(number, radix) {
 
 NumberToString(10000000000,2); // "1001010100000010111110010000000000"
 
-function StringToNumber() {
 
+function StringToNumber(string, radix) {
+    return parseInt(string, radix)
 }
