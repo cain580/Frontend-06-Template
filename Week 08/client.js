@@ -81,7 +81,6 @@ class TrunkedBodyParser {
                 this.length += parseInt(char, 16);
             }
         } else if (this.current === this.WAITING_LENGTH_LINE_END) {
-            // console.log("WAITING_LENGTH_LINE_END");
             if (char === '\n') {
                 this.current = this.READING_TRUNK;
             }
@@ -195,7 +194,7 @@ class ResponseParser {
 (async function () {
   let request = new Request({
     method: 'POST',
-    host: '192.168.1.3', // 不知道为什么在本地  127.0.0.1 与 localhost 请求不到，只能换成IP 了
+    host: '127.0.0.1', // 不知道为什么在本地  127.0.0.1 与 localhost 请求不到，只能换成IP 了
     port:'8088',
     path: '/',
     headers: {
